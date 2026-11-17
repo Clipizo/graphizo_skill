@@ -199,6 +199,10 @@ FIELDS = [
     ("palette.saturation", "PaletteSat", "num"),
     ("palette.lightness", "PaletteLight", "num"),
 ]
+# Colours a creator look sets, with the Graphizo switch that puts the colour's picker in place of the look's colour.
+LOOK_OVERRIDES = (("background", "Bg", "CustomBg"), ("text_color", "Label", "CustomText"),
+                  ("grid.color", "Grid", "CustomGrid"), ("axis.color", "Axis", "CustomAxis"))
+LOOK_OVERRIDE_NAMES = {"Bg": "background", "Label": "text colour", "Grid": "grid colour", "Axis": "axis colour"}
 GROUP_KEYS = {}
 for _path, _input, _kind in FIELDS:
     if "." in _path:
@@ -816,6 +820,13 @@ def build_inputs(spec, data, compact=False):
             put(input_id + "G", g)
             put(input_id + "B", b)
 
+    # A colour given together with a creator look means "use this colour": switch it on (the look keeps the rest).
+    if int(values.get("CreatorLook", 0)) != 0:
+        for path, _prefix, switch in LOOK_OVERRIDES:
+            value, present = get_path(spec, path)
+            if present and value is not None:
+                put(switch, 1)
+
     # Title on/off.
     title = spec.get("title")
     if title is not None:
@@ -1305,19 +1316,23 @@ def check_tool(tool_name, tool, splines, spec_inputs, report, clip_frames=None):
         report.note("Value Format Percent shows each value as a share of the first series' total")
 
     # ----- looks, colours and text
+    own_bg = (values.get("BgR", 0.07), values.get("BgG", 0.07), values.get("BgB", 0.09))
+    own_text = (values.get("LabelR", 0.92), values.get("LabelG", 0.93), values.get("LabelB", 0.95))
     if look != "custom":
-        for prefix, name in (("Bg", "background"), ("Label", "text colour"), ("Grid", "grid colour")):
-            if any(prefix + c in file_values and not same_value(file_values[prefix + c], spec_inputs[prefix + c].get("default"))
-                   for c in "RGB"):
-                report.note("the %s look sets the %s; set CreatorLook to Custom (0) to use your own" % (
-                    look.replace("_", " "), name))
         bg, text_col = LOOK_COLORS[look]
+        for _path, prefix, switch in LOOK_OVERRIDES:
+            if values.get(switch):
+                bg = own_bg if prefix == "Bg" else bg
+                text_col = own_text if prefix == "Label" else text_col
+            elif any(prefix + c in file_values and not same_value(file_values[prefix + c], spec_inputs[prefix + c].get("default"))
+                     for c in "RGB"):
+                report.note("the %s look sets the %s; turn on %s (1), or use CreatorLook 0, to use your own" % (
+                    look.replace("_", " "), LOOK_OVERRIDE_NAMES[prefix], switch))
     else:
-        bg = (values.get("BgR", 0.07), values.get("BgG", 0.07), values.get("BgB", 0.09))
-        text_col = (values.get("LabelR", 0.92), values.get("LabelG", 0.93), values.get("LabelB", 0.95))
-        if not values.get("TransparentBg") and contrast(bg, text_col) < 3.0:
-            report.warn("text %s on background %s is hard to read (contrast %.1f:1; aim for 4.5 or more)" % (
-                color_hex(text_col), color_hex(bg), contrast(bg, text_col)))
+        bg, text_col = own_bg, own_text
+    if not values.get("TransparentBg") and contrast(bg, text_col) < 3.0:
+        report.warn("text %s on background %s is hard to read (contrast %.1f:1; aim for 4.5 or more)" % (
+            color_hex(text_col), color_hex(bg), contrast(bg, text_col)))
     if values.get("TransparentBg") and luminance(text_col) < 0.2:
         report.note("dark text on a transparent background: make sure the footage behind it is light")
     if not values.get("AutoPalette", 1) and look != "custom":
@@ -1677,6 +1692,22 @@ def preset_to_spec(path, data, text=None):
         for part in parts[:-1]:
             node = node.setdefault(part, {})
         node[parts[-1]] = value
+    # Under a creator look a colour counts only with its Custom switch on: then it is always written (the builder
+    # turns the switch on again from it); without the switch it is dropped, so a rebuild cannot change the look.
+    look_set = int(raw.get("CreatorLook", 0)) != 0
+    for path, prefix, switch in LOOK_OVERRIDES:
+        used.add(switch)
+        if not look_set:
+            continue
+        parts = path.split(".")
+        group = spec.get(parts[0]) if len(parts) > 1 else spec
+        if raw.get(switch):
+            node = spec.setdefault(parts[0], {}) if len(parts) > 1 else spec
+            node[parts[-1]] = color_hex([raw.get(prefix + c, spec_inputs[prefix + c]["default"]) for c in "RGB"])
+        elif isinstance(group, dict) and parts[-1] in group:
+            del group[parts[-1]]
+            if len(parts) > 1 and not group:
+                del spec[parts[0]]
     if "OutputPreset" not in raw and (spec.get("data") is not None or spec.get("fields") is not None):
         # No OutputPreset in a node saved from Resolve means the node's default, Custom (its own width and height).
         spec["canvas"] = "custom"

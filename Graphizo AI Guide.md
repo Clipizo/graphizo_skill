@@ -58,7 +58,7 @@ You are making a **preset for the Graphizo node**: plain text in Fusion's settin
   - numbers are plain: digits, one `.` for decimals, an optional `-`, and no units in the cells (use `ValuePrefix` / `ValueSuffix`);
   - the data has the shape the chart needs (section 4), and stays inside the limits (64 rows; 6 value columns, 16 for a Heatmap, 128 for a race).
 - [ ] **Title:** to show a title, write `ShowTitle` 1 and `TitleText`. `Subtitle` and `SourceText` show whenever they are not empty.
-- [ ] **Colours:** a creator look (`CreatorLook` 1 to 5) sets the background, text, grid and palette. To use your own background or text colour, set `CreatorLook` 0. To use your own bar colours, set `AutoPalette` 0 and write `Custom1R`/`G`/`B` and so on (0 to 1 each).
+- [ ] **Colours:** a creator look (`CreatorLook` 1 to 5) sets the background, text, grid, axis and palette. To keep a look but use your own background, text, grid or axis colour, give `background`, `text_color`, `grid.color` or `axis.color` in the spec (the helper switches on `CustomBg`, `CustomText`, `CustomGrid` or `CustomAxis`); `CreatorLook` 0 uses all your own colours. To use your own bar colours, set `AutoPalette` 0 and write `Custom1R`/`G`/`B` and so on (0 to 1 each).
 - [ ] **Timing:** frames are worked out with section 7, and every animation ends before the clip's last frame.
 - [ ] **Values are in range:** checkboxes are 0 or 1, dropdowns use the numbers in the control tables (section 12), and decimals use a dot.
 - [ ] **Each ID once.** Do not write the same input twice.
@@ -195,6 +195,7 @@ Chart notes:
 **Your own colours:**
 
 - With `CreatorLook` 0, set the background with `BgR`, `BgG`, `BgB`, the text with `LabelR`, `LabelG`, `LabelB`, and the grid and axis with `GridR`/`G`/`B` and `AxisR`/`G`/`B`. All are 0 to 1 (divide 0-255 values by 255). Keep text readable: light text on a dark background or the other way round.
+- With a creator look, those colours apply only when their switch is 1: `CustomBg`, `CustomText`, `CustomGrid`, `CustomAxis` (the look keeps everything else). In a spec, writing `background`, `text_color`, `grid.color` or `axis.color` next to a `look` turns the switch on for you.
 - **Bar and slice colours:** `AutoPalette` 1 (the default) uses the look's palette, or with Custom an even spread of hues (`PaletteHue`, `PaletteSpread`, `PaletteSat`, `PaletteLight`). `AutoPalette` 0 uses `Custom1` to `Custom6` (each as R, G, B), even with a creator look. Colour 1 goes to the first row for one-series charts and to the first series for multi-series charts; more rows than six reuse the colours in order. Three charts use one colour: the Heatmap and the Waterfall's total bars use Colour 1 (waterfall steps are always green up and red down), and XY Scatter points use Colour 2.
 - **`TransparentBg` 1** leaves out the background, for charts over footage. The look still sets the text and palette.
 
@@ -361,6 +362,7 @@ Every control a preset can set, with its default. Dropdowns list their numbers. 
 | ID | Label (section) | Default | Values |
 |---|---|---|---|
 | `TransparentBg` | Transparent Background (Style) | 0 | 0 off, 1 on |
+| `CustomBg` | Custom Background (Style) | 0 | 0 off, 1 on |
 | `BgR`, `BgG`, `BgB` | Background (Style) | 0.07, 0.07, 0.09 | red, green, blue, 0 to 1 each |
 | `MasterOpacity` | Master Opacity (Style) | 1 | 0 to 1 (slider; more can be typed) |
 | `Padding` | Padding (Style) | 60 | whole number 0 to 400 (slider; more can be typed) |
@@ -376,12 +378,15 @@ Every control a preset can set, with its default. Dropdowns list their numbers. 
 | `GlowSize` | Glow Size (Depth And Glow) | 18 | 2 to 80 (slider; more can be typed) |
 | `GridShow` | Show Grid (Grid And Axis) | 1 | 0 off, 1 on |
 | `GridFade` | Grid Fade (Frames) (Grid And Axis) | 12 | whole number 0 to 60 |
+| `CustomGrid` | Custom Grid Color (Grid And Axis) | 0 | 0 off, 1 on |
 | `GridR`, `GridG`, `GridB` | Grid (Grid And Axis) | 0.22, 0.24, 0.29 | red, green, blue, 0 to 1 each |
 | `AxisShow` | Show Axis (Grid And Axis) | 1 | 0 off, 1 on |
+| `CustomAxis` | Custom Axis Color (Grid And Axis) | 0 | 0 off, 1 on |
 | `AxisR`, `AxisG`, `AxisB` | Axis (Grid And Axis) | 0.55, 0.57, 0.62 | red, green, blue, 0 to 1 each |
 | `FontFamily` | Font (Labels) | "Arial" | text |
 | `FontStyle` | Weight / Style (Labels) | "Regular" | text |
 | `LabelScale` | Font Scale (Labels) | 4 | whole number 1 to 12 (slider; more can be typed) |
+| `CustomText` | Custom Text Color (Labels) | 0 | 0 off, 1 on |
 | `LabelR`, `LabelG`, `LabelB` | Text (Labels) | 0.92, 0.93, 0.95 | red, green, blue, 0 to 1 each |
 | `ShowLabels` | Show Labels (Labels) | 1 | 0 off, 1 on |
 | `ShowValues` | Show Values (Labels) | 0 | 0 off, 1 on |

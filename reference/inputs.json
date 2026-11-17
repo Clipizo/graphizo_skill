@@ -695,6 +695,16 @@
    "default": 0,
    "integer": true
   },
+  "CustomBg": {
+   "label": "Custom Background",
+   "page": "Style",
+   "section": "Style",
+   "type": "Number",
+   "control": "CheckboxControl",
+   "role": "public",
+   "default": 0,
+   "integer": true
+  },
   "BgR": {
    "label": "Background",
    "page": "Style",
@@ -918,6 +928,16 @@
    ],
    "integer": true
   },
+  "CustomGrid": {
+   "label": "Custom Grid Color",
+   "page": "Style",
+   "section": "Grid And Axis",
+   "type": "Number",
+   "control": "CheckboxControl",
+   "role": "public",
+   "default": 0,
+   "integer": true
+  },
   "GridR": {
    "label": "Grid",
    "page": "Style",
@@ -965,6 +985,16 @@
    "control": "CheckboxControl",
    "role": "public",
    "default": 1,
+   "integer": true
+  },
+  "CustomAxis": {
+   "label": "Custom Axis Color",
+   "page": "Style",
+   "section": "Grid And Axis",
+   "type": "Number",
+   "control": "CheckboxControl",
+   "role": "public",
+   "default": 0,
    "integer": true
   },
   "AxisR": {
@@ -1072,6 +1102,16 @@
     1,
     12
    ],
+   "integer": true
+  },
+  "CustomText": {
+   "label": "Custom Text Color",
+   "page": "Style",
+   "section": "Labels",
+   "type": "Number",
+   "control": "CheckboxControl",
+   "role": "public",
+   "default": 0,
    "integer": true
   },
   "LabelR": {
