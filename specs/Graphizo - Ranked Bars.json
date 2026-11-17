@@ -1,0 +1,25 @@
+{
+  "name": "Graphizo - Ranked Bars",
+  "notes": "Horizontal ranking, sorted, with one category highlighted and the others dimmed.",
+  "chart": "bar",
+  "orientation": "horizontal",
+  "look": "midnight",
+  "canvas": "youtube",
+  "data": "Category,Views\nScience,280000\nTechnology,340000\nHistory,190000\nTravel,145000\nDesign,115000",
+  "title": "WHAT PEOPLE WATCH",
+  "subtitle": "Average views per upload | illustrative data",
+  "source": "Source: example data",
+  "sort": "descending",
+  "highlight": 2,
+  "dim": 0.32,
+  "values": true,
+  "number_style": "compact",
+  "decimals": 1,
+  "animation": {
+    "playback": "entrance",
+    "duration": 45,
+    "ease": "ease_out",
+    "stagger": 0.35,
+    "count_up": true
+  }
+}

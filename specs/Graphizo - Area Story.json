@@ -1,0 +1,24 @@
+{
+  "name": "Graphizo - Area Story",
+  "notes": "One channel's year drawn as a soft area with a moving dot. For two or more series, a Line chart keeps every line visible.",
+  "chart": "area",
+  "look": "studio_lime",
+  "canvas": "youtube",
+  "data": "Month,Views\nJan,45000\nFeb,65000\nMar,90000\nApr,135000\nMay,150000\nJun,210000\nJul,275000\nAug,320000\nSep,390000\nOct,430000\nNov,530000\nDec,620000",
+  "title": "A YEAR OF MOMENTUM",
+  "subtitle": "Monthly views | illustrative data",
+  "number_style": "compact",
+  "lines": {
+    "smooth": true,
+    "marker": "circle",
+    "marker_size": 8,
+    "area_opacity": 0.22
+  },
+  "animation": {
+    "playback": "entrance",
+    "build": "draw",
+    "duration": 100,
+    "ease": "smooth",
+    "draw_head": true
+  }
+}
