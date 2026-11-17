@@ -55,7 +55,7 @@ You are making a **preset for the Graphizo node**: plain text in Fusion's settin
 - [ ] **Data:**
   - with `DataSource` 1 (Text), `Data` holds the table: a header line, then one `Label,Value,...` line per row, written as one text with `\n` between lines;
   - with `DataSource` 0 (Fields), `FieldCount` is set and every field up to it has `FieldLabelN` and `FieldValueN`;
-  - numbers are plain: digits, one `.` for decimals, an optional `-`. No currency symbols other than `$`, no units in the cells (use `ValuePrefix` / `ValueSuffix`);
+  - numbers are plain: digits, one `.` for decimals, an optional `-`, and no units in the cells (use `ValuePrefix` / `ValueSuffix`);
   - the data has the shape the chart needs (section 4), and stays inside the limits (64 rows; 6 value columns, 16 for a Heatmap, 128 for a race).
 - [ ] **Title:** to show a title, write `ShowTitle` 1 and `TitleText`. `Subtitle` and `SourceText` show whenever they are not empty.
 - [ ] **Colours:** a creator look (`CreatorLook` 1 to 5) sets the background, text, grid and palette. To use your own background or text colour, set `CreatorLook` 0. To use your own bar colours, set `AutoPalette` 0 and write `Custom1R`/`G`/`B` and so on (0 to 1 each).
@@ -123,10 +123,10 @@ Mar,240000,17500
 ```
 
 - **The first column is the label** of each row (a category, a month, a party). The other columns are **series** (value columns).
-- **The header line** names the series. It is any first line whose cells are not numbers, or a line whose first cell is exactly `#`, like `#,Views,Subscribers`. Use the `#` form when the column names are numbers, such as years: `#,2021,2022,2023`.
+- **The header line** names the series. It is any first line whose cells are not numbers, or a line whose first cell is exactly `#`, like `#,Views,Subscribers`. A first line of years above rows that are not years (`Country,2021,2022,2023`) is a header too; the `#` form (`#,2021,2022,2023`) always works.
 - **Columns** are separated by commas, tabs or semicolons (Graphizo uses whichever the first line has most of). A cell with a comma in it is quoted: `"Atlas, Inc.",420`. A quote inside a quoted cell is doubled: `""`.
-- **Numbers:** Graphizo drops spaces, commas, `$` and `%` from a cell, and reads `(12)` as -12. Anything else that is not a plain number, such as `€12`, `12 kg` or `n/a`, counts as **0**. Put units in `ValuePrefix` and `ValueSuffix` instead. Empty cells are 0.
-- **A line whose first cell is `#` followed by text** (like `# note`) is a comment. Empty lines are skipped.
+- **Numbers:** Graphizo ignores spaces, `$`, `€`, `£`, `¥`, `%` and apostrophes in a cell, and reads `(12)` as -12. Thousands marks and decimal marks are both understood: `1,250.5`, `1.250,5`, `1 250` and `1'250` all work, and in a semicolon table (European CSV) `1,5` is 1.5. Anything else that is not a number, such as `12 kg` or `n/a`, counts as **0**: put units in `ValuePrefix` and `ValueSuffix`. Empty cells are 0. In your own presets, write plain numbers with a `.` for decimals.
+- **A line that starts with `#` and has no numbers** (like `# note`) is a comment; `#1 Song,50` is a data row. Empty lines, and rows whose cells are all empty (like `,,,` from a spreadsheet), are skipped.
 - **Labels, titles, prefixes and suffixes** can use any characters the font has, such as `€`, `£` or `é`. Each text is one line, written left to right (no right-to-left shaping). Write units the way the user does: `€` as a prefix or ` €` as a suffix.
 - **Limits:** 64 rows; 6 value columns (16 for a Heatmap, 128 snapshots for a Bar Chart Race). Extra rows and columns are ignored.
 - **In the preset**, the whole table is one text value with `\n` between lines: `Data = Input { Value = "Month,Views\nJan,120\nFeb,180", },`.
@@ -167,7 +167,8 @@ Mar,240000,17500
 
 Chart notes:
 
-- **Bar** (0) uses `Orientation` (0 vertical, 1 horizontal). Long labels fit better on horizontal bars. `SortMode` (0 none, 1 ascending, 2 descending) sorts by the first series.
+- **Bar** (0) uses `Orientation` (0 vertical, 1 horizontal). Long labels fit better on horizontal bars. `SortMode` (0 none, 1 ascending, 2 descending) sorts by the first series (not on a Waterfall, whose steps keep their order).
+- **Grouped and Stacked Bar:** with `ShowValues` 1, Grouped labels every bar (with `ValueMode` 1, its share of its own series) and Stacked labels each stack's total at its outer end (with `ValueMode` 1, its share of all stacks).
 - **Waterfall:** a row whose label starts with `=`, with nothing after it, is a **subtotal bar**: `=Gross` draws a bar named Gross at the running total. `WaterfallTotal` 1 adds a final total bar named `WaterfallTotalLabel`. Increases are green, decreases red, totals use colour 1.
 - **Gauge:** each row is a 270-degree ring, from the outside in; the first row's value is the big number in the middle and the rows' names are listed below. The scale runs from 0 to a rounded maximum, or set `AutoY` 0 with `YMin` and `YMax` (for example 0 and 100 with `ValueSuffix` `%`). `InnerRadius` sets the ring thickness.
 - **Funnel:** stages narrow by size and connect with soft bands. `ValueMode` 1 shows each stage as a percentage of the first.
@@ -221,7 +222,7 @@ Chart notes:
 
 **Storytelling:**
 
-- `FocusItem` highlights one row (its number in the original data, from 1) on one-series charts and races, or one series on multi-series charts; `FocusDim` is the other items' opacity (default 0.25). 0 highlights nothing.
+- `FocusItem` highlights one row (its number in the original data, from 1) on one-series charts, races, waterfalls, scatter and bubble points, or one series on multi-series charts; `FocusDim` is the other items' opacity (default 0.25). 0 highlights nothing.
 - `ShowTarget` 1 draws a dashed reference line at `TargetValue` on Bar, Line, Area, Scatter and Waterfall charts, with the caption `TargetLabel`. `TargetShowValue` 1 adds the formatted number.
 - `AutoY` 0 fixes the value axis to `YMin` and `YMax`. Use it to compare several charts on one scale, or to zoom in.
 
@@ -631,7 +632,7 @@ Four Field values keyed to change on frames 75, 135 and 195; each change springs
 | Pasting does nothing | Copy the whole block, from the first `{` to the last `}`, and click an empty spot in the Nodes area before pasting. |
 | The chart replaced my video | It was pasted while a node was selected, so Fusion wired it to that node. Connect Graphizo to a Merge's green foreground input instead (Quick start, step 4), and click an empty spot before pasting next time. |
 | The chart shows Q1 to Q4 or Sales and Costs | That is Graphizo's example data: the preset has no data, or `DataSource` does not match (Text needs `Data`; Fields need `FieldCount` and the fields). |
-| Some values are 0 | The cells have symbols Graphizo cannot read, like `€` or units. Keep cells plain and use `ValuePrefix` / `ValueSuffix`. |
+| Some values are 0 | The cells have text Graphizo cannot read, like units (`12 kg`) or `n/a`. Keep cells plain and use `ValuePrefix` / `ValueSuffix`. |
 | The chart does not animate | `MotionMode` is 0 (Manual Progress). Use 1, 2 or 3. |
 | The first frame is empty | The entrance starts there. Play the clip, or raise `MotionStart`. |
 | The chart disappears early | With `MotionMode` 2 the exit runs after `MotionHold`; raise the hold or use `MotionMode` 1. |

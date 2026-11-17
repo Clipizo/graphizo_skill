@@ -548,12 +548,31 @@ def split_data_line(line, delimiter):
 LUA_NUMBER_RE = re.compile(r"^[+-]?(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)$")
 
 
-def data_number(text):
-    """Graphizo's cell reader: spaces, commas, $ and % are dropped; (12) is -12; anything else is not a number."""
-    s = re.sub(r"[\s,$%]", "", str(text or ""))
+IGNORED_IN_NUMBERS = re.compile("[\\s   $%'€£¥’]")
+
+
+def data_number(text, semicolon=False):
+    """Graphizo's cell reader (port of the Fuse's dataNumber). Spaces, no-break and thin spaces, $, EUR, GBP, JPY,
+    % and apostrophes are ignored; (12) is -12. With both "." and "," the last one is the decimal mark. A single
+    comma is a decimal mark in semicolon tables or when not followed by exactly three digits; otherwise commas are
+    thousands separators. Several dots, or one dot followed by three digits in a semicolon table, are thousands."""
+    s = IGNORED_IN_NUMBERS.sub("", str(text or ""))
     m = re.match(r"^\((.*)\)$", s)
     if m:
         s = "-" + m.group(1)
+    last_comma, last_dot = s.rfind(","), s.rfind(".")
+    if last_comma >= 0 and last_dot >= 0:
+        s = s.replace(".", "").replace(",", ".") if last_comma > last_dot else s.replace(",", "")
+    elif last_comma >= 0:
+        after = re.search(r",(\d*)$", s)
+        if s.count(",") == 1 and (semicolon or (after is not None and len(after.group(1)) != 3)):
+            s = s.replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif last_dot >= 0:
+        after = re.search(r"\.(\d*)$", s)
+        if s.count(".") > 1 or (semicolon and after is not None and len(after.group(1)) == 3):
+            s = s.replace(".", "")
     if not LUA_NUMBER_RE.match(s):
         return None
     value = float(int(s, 16)) if "x" in s.lower() else float(s)
@@ -562,13 +581,18 @@ def data_number(text):
     return max(-1e15, min(1e15, value))
 
 
+def is_year_cell(text):
+    return re.fullmatch(r"\d{4}", text) is not None and 1800 <= int(text) <= 2200
+
+
 def parse_data(text, series_limit=6):
     """Port of the Fuse's parseData: rows (<= 64), series names, invalid cells."""
     rows, series_names, max_series = [], [], 0
     text = str(text or "").replace("\r\n", "\n").replace("\r", "\n")
-    if text.startswith("\ufeff"):
+    if text.startswith("﻿"):
         text = text[1:]
     delimiter, invalid, cut_columns, cut_rows, bad_cells = None, 0, 0, False, []
+    lines = []
     for raw in text.split("\n"):
         line = raw.strip()
         if not line or line.startswith("--") or line.startswith("//"):
@@ -580,14 +604,34 @@ def parse_data(text, series_limit=6):
                 if count > best:
                     best, delimiter = count, sep
         cols = split_data_line(line, delimiter or ",")
+        if any(c != "" for c in cols):  # Excel's ",,," rows are skipped
+            lines.append((cols, line.startswith('"')))
+            if len(lines) >= 512:
+                break
+    semicolon = delimiter == ";"
+
+    def value_info(cols):
+        cells = [c for c in cols[1:] if c != ""]
+        numeric = any(data_number(c, semicolon) is not None for c in cols[1:])
+        return numeric, bool(cells) and all(is_year_cell(c) for c in cells)
+
+    for index, (cols, quoted) in enumerate(lines):
         if len(cols) < 2 and not (cols[0] if cols else "").startswith("="):
             continue
         first = cols[0] if cols else ""
-        numeric = any(data_number(c) is not None for c in cols[1:])
-        if first == "#" or (not rows and not series_names and not numeric):
+        numeric, all_years = value_info(cols)
+        hash_line = not quoted and first.startswith("#")
+        header = not quoted and first == "#"
+        if not header and not rows and not series_names and not hash_line:
+            if not numeric:
+                header = True
+            elif all_years and index + 1 < len(lines):
+                next_numeric, next_years = value_info(lines[index + 1][0])
+                header = next_numeric and not next_years
+        if header:
             series_names = cols[1:series_limit + 1]
             cut_columns = max(cut_columns, len(cols) - 1 - series_limit)
-        elif first.startswith("#"):
+        elif hash_line and not numeric:
             continue
         else:
             if len(rows) >= 64:
@@ -596,7 +640,7 @@ def parse_data(text, series_limit=6):
             label = first or str(len(rows) + 1)
             values = []
             for cell in cols[1:series_limit + 1]:
-                num = data_number(cell)
+                num = data_number(cell, semicolon)
                 if num is None and cell != "":
                     invalid += 1
                     if len(bad_cells) < 5:
@@ -1175,8 +1219,8 @@ def check_tool(tool_name, tool, splines, spec_inputs, report, clip_frames=None):
     if not rows:
         report.error("no data rows: write Label,Value lines (for example Jan,120)")
     if parsed["invalid"]:
-        report.warn("%d cells are not numbers and draw as 0 (for example %s). Graphizo reads digits, '.', '-', "
-                    "and drops spaces, commas, $ and %%; write other currencies as a prefix (ValuePrefix) instead" % (
+        report.warn("%d cells are not numbers and draw as 0 (for example %s). Graphizo reads digits with '.' or ','"
+                    " and ignores spaces, $, €, £, ¥, %% and apostrophes; put units like kg in ValueSuffix instead" % (
                         parsed["invalid"], ", ".join(repr(c) for c in parsed["bad_cells"])))
     if parsed["cut_rows"]:
         report.warn("more than 64 rows: Graphizo draws the first 64")
@@ -1718,9 +1762,17 @@ def cmd_data(args):
     if args.transpose:
         width = max(len(r) for r in rows)
         rows = [[r[i] if i < len(r) else "" for r in rows] for i in range(width)]
-    comma_decimals = sum(1 for r in rows[1:] for c in r[1:]
-                         if re.fullmatch(r"-?\d{1,3}(\.\d{3})*,\d{1,2}|-?\d+,\d{1,2}", NUMBER_CHARS.sub("", c)))
+    # The output is comma-separated, so a semicolon file's numbers (1,5 = 1.5; 1.250 = 1250) are written as plain
+    # decimals first; Graphizo reads them the same way, but "1,250" would mean 1250 once the separator is a comma.
     cleaned = 0
+    if delimiter == ";" and not args.decimal_comma:
+        for r in rows[1:]:
+            for i in range(1, len(r)):
+                value = data_number(r[i], semicolon=True)
+                if value is not None and r[i].strip() != fmt_num(value):
+                    r[i], cleaned = fmt_num(value), cleaned + 1
+    ambiguous = 0 if delimiter == ";" else sum(
+        1 for r in rows[1:] for c in r[1:] if re.fullmatch(r"-?\d{1,3},\d{3}", NUMBER_CHARS.sub("", c)))
     if args.clean or args.decimal_comma:
         for r in rows[1:]:
             for i in range(1, len(r)):
@@ -1738,9 +1790,9 @@ def cmd_data(args):
     if parsed["bad_cells"]:
         notes.append("not numbers (they draw as 0): %s. Pass --clean to drop currency signs and units, and put "
                      "the unit in Value Prefix / Suffix" % ", ".join(repr(c) for c in parsed["bad_cells"]))
-    if comma_decimals and not args.decimal_comma:
-        notes.append("%d cells look like European numbers (1.234,5): Graphizo would read 1,5 as 15. Pass "
-                     "--decimal-comma if a comma is the decimal mark in this file" % comma_decimals)
+    if ambiguous and not args.decimal_comma:
+        notes.append("%d cells like 1,250 are read as thousands (1250). If the comma is the decimal mark in this "
+                     "file (1,250 = 1.25), pass --decimal-comma" % ambiguous)
     for note in notes:
         print("--- " + note, file=sys.stderr)
     return 0
