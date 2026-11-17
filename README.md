@@ -58,7 +58,7 @@ The ready presets (all data in them is illustrative):
 | Grouped Months | two series side by side, year on year |
 | Stacked Formats | three formats stacked per quarter |
 | Growth Line | a line that draws on toward a goal line |
-| Area Story | a soft area that draws on over a year |
+| Area Story | two channels as soft overlapping areas over a year |
 | Price Scatter | price against rating |
 | Pie Share | shares with a side legend |
 | Donut Total | donut sweep with a total in the middle |

@@ -4,7 +4,7 @@
 			Inputs = {
 				GraphType = Input { Value = 0, },
 				Orientation = Input { Value = 1, },
-				CreatorLook = Input { Value = 1, },
+				CreatorLook = Input { Value = 3, },
 				DataSource = Input { Value = 1, },
 				FieldCount = Input { Value = 4, },
 				FieldLabel1 = Input { Value = "Q1", },

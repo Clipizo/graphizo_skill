@@ -151,7 +151,7 @@ Mar,240000,17500
 | 1 | Grouped Bar | labels + 2 to 6 value columns | comparing a few series per category; turn on the legend |
 | 2 | Stacked Bar | labels + 2 to 6 value columns | parts of a whole per category |
 | 3 | Line | labels + 1 to 6 value columns | change over time |
-| 4 | Area | labels + 1 value column | one trend with weight. With several series the later areas cover the earlier lines, so use Line for those |
+| 4 | Area | labels + 1 to 6 value columns | trends with weight; the soft areas overlap (`AreaOpacity`) |
 | 5 | Scatter | labels + X column + Y column | two measures per item (the points have no name labels) |
 | 6 | Pie | labels + 1 value column | shares of a whole, 2 to 7 slices |
 | 7 | Donut | labels + 1 value column | shares, with a total in the middle (`DonutTotal`) |
@@ -325,7 +325,7 @@ Pulse,180000,320000,700000,1400000
 - **Sort rankings** (`SortMode` 2) and **highlight** the item the story is about (`FocusItem`, `FocusDim` 0.25 to 0.35).
 - **Readable numbers:** `NumberStyle` 1 for large values (`1.3M`), units as a prefix or suffix, and `ShowValues` 1 when there are about 12 bars or fewer.
 - **Motion:** Ease Out or Back Out with a `Stagger` of 0.3 to 0.6 for bars; Draw with `DrawHead` for lines; Sweep for pies, donuts and gauges; `CountUp` 1 when values are shown. Keep the entrance under 2 seconds and hold at least 3 seconds.
-- **Looks:** Midnight is a safe default, Neon with `Glow` 0.5 to 0.8 for energetic videos, Editorial Paper for documentary topics, Studio Lime and Sunset for creator branding. Highlighting (`FocusItem`) reads best on the dark looks.
+- **Looks:** Midnight is a safe default, Neon with `Glow` 0.5 to 0.8 for energetic videos, Editorial Paper for documentary topics, Studio Lime and Sunset for creator branding.
 - **Vertical videos:** `OutputPreset` 2, horizontal bars, `LabelScale` 5 or 6, short labels, and a short title (about 12 characters) with `TitleScale` 1.2 to 1.35. Longer titles shrink to fit by themselves.
 - **Over footage:** `TransparentBg` 1, light text, `Shadow` 0.5 to 0.7 for separation, and `GridShow` 0 / `AxisShow` 0 for a clean overlay.
 
@@ -491,7 +491,7 @@ Every control a preset can set, with its default. Dropdowns list their numbers. 
 
 ## 13. Example 1: Ranked Bars
 
-A horizontal ranking on the Midnight look: sorted from largest to smallest, the second row (Technology) highlighted, compact values that count up, built with a short cascade. Pasted as a new node, everything not listed is at its default.
+A horizontal ranking on the Editorial Paper look: sorted from largest to smallest, the second row (Technology) highlighted while the others fade, compact values that count up, built with a short cascade. Pasted as a new node, everything not listed is at its default.
 
 <!-- example: Graphizo - Ranked Bars -->
 ```lua
@@ -501,7 +501,7 @@ A horizontal ranking on the Midnight look: sorted from largest to smallest, the 
 			Inputs = {
 				GraphType = Input { Value = 0, },
 				Orientation = Input { Value = 1, },
-				CreatorLook = Input { Value = 1, },
+				CreatorLook = Input { Value = 3, },
 				DataSource = Input { Value = 1, },
 				Data = Input { Value = "Category,Views\nScience,280000\nTechnology,340000\nHistory,190000\nTravel,145000\nDesign,115000", },
 				OutputPreset = Input { Value = 1, },
